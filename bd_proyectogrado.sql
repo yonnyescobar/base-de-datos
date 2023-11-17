@@ -138,5 +138,3 @@ descripcion varchar(50),
 FOREIGN KEY (idTipoProyecto) REFERENCES tipoProyecto(idTipoProyecto),
 )
 go
-
-drop database proyectoGrados

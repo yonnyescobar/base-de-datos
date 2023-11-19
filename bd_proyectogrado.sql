@@ -9,7 +9,7 @@ go
 create table proyecto (
 idProyecto int identity(1,1) primary key,
 titulo varchar(50) not null,
-codigoProyecto varchar(50),
+codigoProyecto varchar(50) not null,
 descripcion varchar(100)
 )
 go
@@ -17,7 +17,7 @@ go
 --creacion tabla persona
 create table persona (
 idPersona int identity(1,1) primary key,
-nombre varchar(50),
+nombre varchar(50) not null,
 direccion varchar(50),
 edad int,
 telefono int
@@ -39,7 +39,7 @@ go
 create table estadoProyecto (
 idEstadoproyecto int identity(1,1) primary key,
 idProyecto int,
-estado varchar (50),
+estado varchar (50) not null,
 descripcion varchar (100),
 constraint CK_estadoProyecto_estado CHECK (estado IN ('En Estudio', 'En Desarrollo','Aprobado', 'Terminado', 'Rechazado')),
 FOREIGN KEY (idProyecto) REFERENCES proyecto(idProyecto)
@@ -51,7 +51,7 @@ create table estudiante (
 idEstudiante int identity(1,1) primary key,
 idPersona int,
 promedioAcumulado decimal,
-codigo varchar(50),
+codigo varchar(50) not null,
 constraint CK_estudiante_promedioAcumulado check (promedioAcumulado >= 0 and promedioAcumulado <= 5),
 FOREIGN KEY (idPersona) REFERENCES persona(idPersona)
 )
@@ -61,7 +61,7 @@ go
 create table asesor (
 idAsesor int identity(1,1) primary  key,
 idPersona int,
-profesion varchar (50)
+profesion varchar (50) not null,
 FOREIGN KEY (idPersona) REFERENCES persona(idPersona)
 )
 go
@@ -82,9 +82,9 @@ create table director (
 idDirector int identity(1,1) primary key,
 idPersona int,
 idInforme int,
-codigo varchar(50),
-profesion varchar (50),
-dependencia varchar (100),
+codigo varchar(50) not null,
+profesion varchar (50) not null,
+dependencia varchar (100) not null,
 FOREIGN KEY (idPersona) REFERENCES persona(idPersona),
 FOREIGN KEY (idInforme) REFERENCES informe(idInforme)
 )
@@ -94,9 +94,9 @@ go
 create table jurado (
 idJurado int identity(1,1) primary key,
 idPersona int,
-codigoJurado varchar(50),
-profesion varchar (50),
-dependencia varchar (100),
+codigoJurado varchar(50) not null,
+profesion varchar (50) not null,
+dependencia varchar (100) not null,
 FOREIGN KEY (idPersona) REFERENCES persona(idPersona)
 )
 go
@@ -105,7 +105,7 @@ go
 create table actaCurricular (
 idActaCurricular int identity(1,1) primary key,
 idProyecto int,
-fecha datetime,
+fecha datetime not null,
 cambioDescripcion varchar(100),
 FOREIGN KEY (idProyecto) REFERENCES proyecto(idProyecto)
 )
@@ -116,7 +116,7 @@ create table actaCurricularJurado(
 idActaCurricularJurado int identity(1,1) primary key,
 idJurado int,
 idActaCurricular int,
-fechaSustentacion datetime,
+fechaSustentacion datetime not null,
 sitioSustentacion varchar(100),
 FOREIGN KEY (idJurado) REFERENCES jurado(idJurado),
 FOREIGN KEY (idActaCurricular) REFERENCES actaCurricular(idActaCurricular)
@@ -127,7 +127,7 @@ go
 create table tipoSolicitudProyecto (
 idTipoSolicitudProyecto int identity(1,1) primary key,
 idEstudiante int,
-fecha datetime,
+fecha datetime not null,
 motivo varchar(100),
 FOREIGN KEY (idEstudiante) REFERENCES estudiante(idEstudiante),
 )
@@ -155,3 +155,21 @@ FOREIGN KEY (idTipoProyecto) REFERENCES tipoProyecto(idTipoProyecto),
 FOREIGN KEY (idJurado) REFERENCES jurado(idJurado),
 )
 go
+
+--7. índices
+--agrupados
+/*
+CREATE CLUSTERED INDEX IX_proyecto_idProyecto ON proyecto(idProyecto);
+CREATE CLUSTERED INDEX IX_persona_idPersona ON persona(idPersona);
+CREATE CLUSTERED INDEX IX_tipoProyecto_idTipoProyecto ON tipoProyecto(idTipoProyecto);
+*/
+
+--no agrupados
+CREATE NONCLUSTERED INDEX IX_proyecto_titulo ON proyecto(titulo);
+CREATE NONCLUSTERED INDEX IX_persona_nombre ON persona(nombre);
+CREATE NONCLUSTERED INDEX IX_tipoProyecto_tipo ON tipoProyecto(tipo);
+
+--columnares
+CREATE NONCLUSTERED COLUMNSTORE INDEX IX_proyecto_columnar ON proyecto(idProyecto, titulo, codigoProyecto, descripcion);
+CREATE NONCLUSTERED COLUMNSTORE INDEX IX_persona_columnar ON persona(idPersona, nombre, direccion, edad, telefono);
+CREATE NONCLUSTERED COLUMNSTORE INDEX IX_tipoProyecto_columnar ON tipoProyecto(idTipoProyecto, idProyecto, tipo, descripcion);

@@ -436,11 +436,22 @@ INSERT INTO sustentacionEstudiante (idEstudiante, idTipoProyecto, idJurado, nota
 go
 
 --9. update
+update asesor set profesion = 'Ingeniero Industrial' where idPersona = 10
+go 
 
-
+update persona set edad = 37 where idPersona = 22
+go 
 
 --delete
+delete from estadoProyecto where estado = 'Rechazado'
+go 
 
+delete from asesor where idAsesor = 5
+go 
 
+--truncate
+truncate table asesor
+go 
 
--- truncate
+truncate table estadoProyecto
+go 

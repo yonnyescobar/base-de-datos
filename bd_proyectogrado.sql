@@ -550,3 +550,161 @@ convert(varchar,(sum(p.edad)/count(p.edad))) + ' años' as PromedioEdadEstudiant
 
 from persona as p
 right join estudiante as e on e.idPersona = p.idPersona
+
+--12
+
+--CREACION DE USUARIO
+
+CREATE LOGIN UsuarioDataReader WITH PASSWORD = 'DANIEL12345';
+GO
+
+USE proyectoGrados;
+GO
+
+CREATE USER UsuarioDataReader FOR LOGIN UsuarioDataReader;
+GO
+
+ALTER ROLE db_datareader ADD MEMBER UsuarioDataReader;
+GO
+
+--3 VISTAS
+--Esta vista permite ver los proyectos y los estados en los que se encuentra
+CREATE VIEW ProyectosEstado
+AS
+SELECT p.idProyecto, p.titulo, p.codigoProyecto, p.descripcion, ep.estado
+FROM proyecto p
+INNER JOIN estadoProyecto ep ON p.idProyecto = ep.idProyecto;
+
+go
+--esta vista permite ver al estudiante, el tipo, el jurado y la nota que obtuvo de proyecto
+CREATE VIEW EstudianteJuradoSustentacionNota
+AS
+SELECT 
+    se.idSustentacionEstudiante, 
+    e.codigo AS codigoEstudiante, 
+    p.nombre AS nombreEstudiante, 
+    tp.tipo, 
+    j.codigoJurado, 
+    pj.nombre AS nombreJurado,  
+    se.notaDefinitiva
+FROM sustentacionEstudiante se
+INNER JOIN estudiante e ON se.idEstudiante = e.idEstudiante
+INNER JOIN tipoProyecto tp ON se.idTipoProyecto = tp.idTipoProyecto
+INNER JOIN jurado j ON se.idJurado = j.idJurado
+INNER JOIN persona p ON e.idPersona = p.idPersona  
+INNER JOIN persona pj ON j.idPersona = pj.idPersona; 
+
+
+go
+--Vista muestra todo las proximas sustentaciones teniendo en cuenta la fecha de hoy
+CREATE VIEW VistaProximasSustentaciones AS
+SELECT 
+    e.idEstudiante,
+    pe.nombre AS NombreEstudiante,
+    tp.tipo AS TipoProyecto,
+    acj.fechaSustentacion AS FechaSustentacion,
+    acj.sitioSustentacion AS SitioSustentacion,
+    j.codigoJurado AS CodigoJurado,
+    pj.nombre AS NombreJurado
+FROM sustentacionEstudiante se
+INNER JOIN estudiante e ON se.idEstudiante = e.idEstudiante
+INNER JOIN persona pe ON e.idPersona = pe.idPersona
+INNER JOIN tipoProyecto tp ON se.idTipoProyecto = tp.idTipoProyecto
+INNER JOIN actaCurricularJurado acj ON se.idJurado = acj.idJurado
+INNER JOIN jurado j ON acj.idJurado = j.idJurado
+INNER JOIN persona pj ON j.idPersona = pj.idPersona
+WHERE acj.fechaSustentacion > GETDATE();
+go
+--Estudiantes que tienen un mejor promedio
+
+
+
+--3 PROCEDIMIENTOS
+--Este para obtener los detalles de los estudiantes por el codigo
+CREATE PROCEDURE ObtenerDetallesEstudiante
+    @codigoEstudiante VARCHAR(50)
+AS
+BEGIN
+    SELECT e.*, p.nombre AS nombrePersona
+    FROM estudiante e
+    JOIN persona p ON e.idPersona = p.idPersona
+    WHERE e.codigo = @codigoEstudiante;
+END;
+go
+--Cambiar el estado de los proyectos 
+CREATE PROCEDURE CambiarEstadoProyecto
+    @idProyecto INT,
+    @nuevoEstado VARCHAR(50)
+AS
+BEGIN
+    UPDATE estadoProyecto
+    SET estado = @nuevoEstado
+    WHERE idProyecto = @idProyecto;
+END;
+
+go
+--Para buscar el jurado por la profesion
+CREATE PROCEDURE ObtenerJuradosPorProfesion
+    @profesion VARCHAR(50)
+AS
+BEGIN
+    SELECT j.*
+    FROM jurado j
+    WHERE j.profesion = @profesion;
+END;
+
+go
+
+--3TRIGGERS
+
+--Para actualizar fecha de sustentacion
+CREATE TRIGGER ActualizarFechaSustentacion
+ON actaCurricularJurado
+AFTER INSERT
+AS
+BEGIN
+    UPDATE acj
+    SET fechaSustentacion = GETDATE()
+    FROM actaCurricularJurado acj
+    INNER JOIN inserted i ON acj.idActaCurricularJurado = i.idActaCurricularJurado;
+END;
+go
+--prueba
+
+INSERT INTO actaCurricularJurado (idJurado, idActaCurricular, fechaSustentacion, sitioSustentacion) VALUES
+(2, 7, '2023-09-05 14:15:23', 'Salón 1111');
+go
+
+--Asignar jurado anuevo proyecto
+
+CREATE TRIGGER AsignarJuradoNuevoProyecto
+ON proyecto
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO actaCurricularJurado (idJurado, idActaCurricular, fechaSustentacion, sitioSustentacion)
+    SELECT TOP 1 j.idJurado, ac.idActaCurricular, GETDATE(), 'Salon2035'
+    FROM jurado j
+    CROSS JOIN actaCurricular ac
+    ORDER BY NEWID();
+END;
+
+INSERT INTO proyecto (titulo, codigoProyecto, descripcion)VALUES
+('Pruaba 2', 'S452', 'prueba2 prueba2');
+
+SELECT * FROM actaCurricularJurado;
+go
+
+-- Trigger para recordar que llego a la cantidad de proyectos
+CREATE TRIGGER LimiteFilasProyecto
+ON proyecto
+AFTER INSERT
+AS
+BEGIN
+    IF (SELECT COUNT(*) FROM proyecto) > 12
+    BEGIN
+        PRINT 'Se ha llegado al límite de 12 proyectos en la tabla proyecto';
+    END;
+END;
+INSERT INTO proyecto (titulo, codigoProyecto, descripcion)VALUES
+('Sistemgdroyectos', 'SPdgf001', 'Desfgrrollo de un sistema para gestionar proyectos');

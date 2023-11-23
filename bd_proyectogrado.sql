@@ -255,6 +255,20 @@ INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
 (2, 'Asesoria', 'Proyecto de asesoría para estudiantes');
 INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
 (3, 'Trabajo dirigido', 'Proyecto de trabajo para estudiantes');
+INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
+(4, 'Pasantia', 'Proyecto de tipo pasantía para estudiantes');
+INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
+(5, 'Asesoria', 'Proyecto de asesoría para estudiantes');
+INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
+(6, 'Trabajo dirigido', 'Proyecto de trabajo para estudiantes');
+INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
+(7, 'Pasantia', 'Proyecto de tipo pasantía para estudiantes');
+INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
+(8, 'Asesoria', 'Proyecto de asesoría para estudiantes');
+INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
+(9, 'Trabajo dirigido', 'Proyecto de trabajo para estudiantes');
+INSERT INTO tipoProyecto (idProyecto, tipo, descripcion)VALUES
+(10, 'Pasantia', 'Proyecto de tipo pasantía para estudiantes');
 
 --insertar datos tabla estado proyecto
 INSERT INTO estadoProyecto (idProyecto, estado, descripcion)VALUES
@@ -455,3 +469,84 @@ go
 
 truncate table estadoProyecto
 go 
+
+--10. select usando clausulas, sentencias y operadores lógicos
+--proyectos iniciados
+select
+p.nombre as Estudiante,
+tp.tipo as TipoProyecto,
+pr.titulo as Proyecto,
+ep.estado as Estado
+
+from persona as p
+right join estudiante as e on e.idPersona = p.idPersona
+right join sustentacionEstudiante as se on se.idEstudiante = e.idEstudiante
+right join  tipoProyecto as tp on tp.idTipoProyecto = se.idTipoProyecto
+right join proyecto as pr on pr.idProyecto = tp.idProyecto
+right join estadoProyecto as ep on ep.idProyecto = pr.idProyecto
+
+where 
+tp.idProyecto is not null 
+and ep.estado != 'Aprobado'
+order by p.nombre asc
+
+--proyectos con acta curricular por rango de fecha
+select 
+pr.titulo as Proyecto,
+tp.tipo as Tipo,
+ac.idActaCurricular as Acta,
+ac.fecha as FechaActa
+
+from proyecto as pr
+left join tipoProyecto as tp on tp.idProyecto = pr.idProyecto
+left join actaCurricular as ac on ac.idProyecto = pr.idProyecto
+
+where 
+ac.fecha between '2023-01-01' and '2023-06-30'
+and ac.idActaCurricular is not null
+order by ac.fecha asc
+
+--proyectos relacionados a sistemas
+select 
+pr.titulo as Proyecto,
+pr.descripcion as Descripción
+
+from proyecto as pr
+
+where 
+pr.titulo like '%Sistema%'
+
+--11. select usando funciones
+--conteo de estudiantes por edad
+select 
+count(p.idPersona) as CantidadEstudiantes,
+p.edad as Edad
+
+from persona as p
+right join estudiante as e on e.idPersona = p.idPersona
+
+group by p.edad
+order by count(p.idPersona) desc
+
+--antigüedad acta curricular
+select 
+pr.titulo as Proyecto,
+tp.tipo as Tipo,
+ac.idActaCurricular as Acta,
+ac.fecha as FechaActa,
+convert(varchar,(datediff(month,ac.fecha,getdate()))) + ' meses' as AntiguedadActa
+
+from proyecto as pr
+left join tipoProyecto as tp on tp.idProyecto = pr.idProyecto
+left join actaCurricular as ac on ac.idProyecto = pr.idProyecto
+
+where 
+ac.idActaCurricular is not null
+order by ac.fecha asc
+
+--promedio de edad de estudiantes
+select 
+convert(varchar,(sum(p.edad)/count(p.edad))) + ' años' as PromedioEdadEstudiantes
+
+from persona as p
+right join estudiante as e on e.idPersona = p.idPersona
